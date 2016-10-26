@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import net.sf.jabref.gui.externalfiletype.ExternalFileType;
 import net.sf.jabref.gui.externalfiletype.ExternalFileTypes;
+import net.sf.jabref.preferences.JabRefPreferences;
 
 public class OSX implements NativeDesktop {
 
@@ -43,7 +44,15 @@ public class OSX implements NativeDesktop {
 
     @Override
     public void openPdfWithParameters(String filePath, List<String> parameters) throws IOException {
-        //TODO implement
+        String reader = JabRefPreferences.getInstance().get(JabRefPreferences.USE_PDF_READER);
+        String[] cmd = null;
+        if(!reader.equals(JabRefPreferences.USE_PDF_READER)) {
+            cmd = new String[] {"/usr/bin/open", "-a",
+                    JabRefPreferences.getInstance().get(JabRefPreferences.USE_PDF_READER), filePath};
+        } else {
+            openFile(filePath, "PDF");
+        }
+        Runtime.getRuntime().exec(cmd);
     }
 
     @Override
