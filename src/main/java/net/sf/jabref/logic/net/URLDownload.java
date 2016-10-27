@@ -1,18 +1,3 @@
-/*  Copyright (C) 2003-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.logic.net;
 
 import java.io.BufferedInputStream;
@@ -29,11 +14,17 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.HttpCookie;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -63,6 +54,12 @@ public class URLDownload {
 
     private String postData = "";
 
+    public static URLDownload createURLDownloadWithBrowserUserAgent(String address) throws MalformedURLException {
+        URLDownload downloader = new URLDownload(address);
+        downloader.addParameters("User-Agent", "Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0");
+        return downloader;
+    }
+
     /**
      * @param address the URL to download from
      * @throws MalformedURLException if no protocol is specified in the address, or an unknown protocol is found
@@ -79,24 +76,12 @@ public class URLDownload {
 
         addParameters("User-Agent", "JabRef");
 
-        URLDownload.setCookieHandler();
     }
 
     public URL getSource() {
         return source;
     }
 
-    private static void setCookieHandler() {
-        try {
-            // This should set up JabRef to receive cookies properly
-            if (CookieHandler.getDefault() == null) {
-                CookieHandler.setDefault(new CookieHandlerImpl());
-            }
-        } catch (SecurityException ignored) {
-            // Setting or getting the system default cookie handler is forbidden
-            // In this case cookie handling is not possible.
-        }
-    }
 
     public String determineMimeType() throws IOException {
         // this does not cause a real performance issue as the underlying HTTP/TCP connection is reused
@@ -156,6 +141,23 @@ public class URLDownload {
             LOGGER.warn("Could not copy input", e);
             throw e;
         }
+    }
+
+    public List<HttpCookie> getCookieFromUrl() throws IOException {
+        CookieManager cookieManager = new CookieManager();
+        CookieHandler.setDefault(cookieManager);
+        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+
+        URLConnection con = openConnection();
+        con.getHeaderFields(); // must be read to store the cookie
+
+        try {
+            return cookieManager.getCookieStore().get(source.toURI());
+        } catch (URISyntaxException e) {
+            LOGGER.error("Unable to convert download URL to URI", e);
+            return Collections.emptyList();
+        }
+
     }
 
     private void copy(InputStream in, Writer out, Charset encoding) throws IOException {

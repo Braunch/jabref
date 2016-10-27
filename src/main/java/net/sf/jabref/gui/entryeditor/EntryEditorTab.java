@@ -1,18 +1,3 @@
-/*  Copyright (C) 2003-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.gui.entryeditor;
 
 import java.awt.AWTKeyStroke;
@@ -42,15 +27,18 @@ import net.sf.jabref.Globals;
 import net.sf.jabref.gui.BasePanel;
 import net.sf.jabref.gui.JabRefFrame;
 import net.sf.jabref.gui.autocompleter.AutoCompleteListener;
+import net.sf.jabref.gui.fieldeditors.EntryLinkListEditor;
 import net.sf.jabref.gui.fieldeditors.FieldEditor;
 import net.sf.jabref.gui.fieldeditors.FileListEditor;
 import net.sf.jabref.gui.fieldeditors.TextArea;
 import net.sf.jabref.gui.fieldeditors.TextField;
 import net.sf.jabref.gui.keyboard.KeyBinding;
-import net.sf.jabref.gui.util.FocusRequester;
+import net.sf.jabref.gui.util.GUIUtil;
 import net.sf.jabref.logic.autocompleter.AutoCompleter;
+import net.sf.jabref.logic.l10n.Localization;
 import net.sf.jabref.model.entry.BibEntry;
-import net.sf.jabref.model.entry.FieldProperties;
+import net.sf.jabref.model.entry.FieldName;
+import net.sf.jabref.model.entry.FieldProperty;
 import net.sf.jabref.model.entry.InternalBibtexFields;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -149,13 +137,24 @@ class EntryEditorTab {
             FieldEditor fieldEditor;
             int defaultHeight;
             int wHeight = (int) (50.0 * InternalBibtexFields.getFieldWeight(field));
-            if (InternalBibtexFields.getFieldExtras(field).contains(FieldProperties.FILE_EDITOR)) {
+            if (InternalBibtexFields.getFieldProperties(field).contains(FieldProperty.FILE_EDITOR)) {
                 fieldEditor = new FileListEditor(frame, bPanel.getBibDatabaseContext(), field, null, parent);
+
                 fileListEditor = (FileListEditor) fieldEditor;
+                GUIUtil.correctRowHeight(fileListEditor);
+
+                defaultHeight = 0;
+            } else if (InternalBibtexFields.getFieldProperties(field).contains(FieldProperty.SINGLE_ENTRY_LINK)) {
+                fieldEditor = new EntryLinkListEditor(frame, bPanel.getBibDatabaseContext(), field, null, parent,
+                        true);
+                defaultHeight = 0;
+            } else if (InternalBibtexFields.getFieldProperties(field).contains(FieldProperty.MULTIPLE_ENTRY_LINK)) {
+                fieldEditor = new EntryLinkListEditor(frame, bPanel.getBibDatabaseContext(), field, null, parent,
+                        false);
                 defaultHeight = 0;
             } else {
-                fieldEditor = new TextArea(field, null);
-                bPanel.getSearchBar().getSearchQueryHighlightObservable().addSearchListener((TextArea) fieldEditor);
+                fieldEditor = new TextArea(field, null, getPrompt(field));
+                parent.addSearchListener((TextArea) fieldEditor);
                 defaultHeight = fieldEditor.getPane().getPreferredSize().height;
             }
 
@@ -214,6 +213,39 @@ class EntryEditorTab {
         }
     }
 
+    private String getPrompt(String field) {
+        String prompt = "";
+        switch (field) {
+        case FieldName.AUTHOR:
+            prompt = String.format("%1$s and %1$s and others", Localization.lang("Firstname Lastname"));
+            break;
+        case FieldName.EDITOR:
+            prompt = String.format("%1$s and %1$s and others", Localization.lang("Firstname Lastname"));
+            break;
+        case FieldName.YEAR:
+            prompt = String.format("YYYY");
+            break;
+        case FieldName.DATE:
+            prompt = String.format("YYYY-MM-DD");
+            break;
+        case FieldName.URLDATE:
+            prompt = String.format("YYYY-MM-DD");
+            break;
+        case FieldName.EVENTDATE:
+            prompt = String.format("YYYY-MM-DD");
+            break;
+        case FieldName.ORIGDATE:
+            prompt = String.format("YYYY-MM-DD");
+            break;
+        case FieldName.URL:
+            prompt = String.format("https://");
+            break;
+        default:
+            prompt = "";
+            break;
+        }
+        return prompt;
+    }
 
     private BibEntry getEntry() {
         return entry;
@@ -225,7 +257,7 @@ class EntryEditorTab {
         if (text.isEmpty()) {
             return getEntry().hasField(fieldEditor.getFieldName());
         } else {
-            return !Optional.of(text).equals(getEntry().getFieldOptional(fieldEditor.getFieldName()));
+            return !Optional.of(text).equals(getEntry().getField(fieldEditor.getFieldName()));
         }
     }
 
@@ -271,7 +303,7 @@ class EntryEditorTab {
             /**
              * Corrected to fix [ 1594169 ] Entry editor: navigation between panels
              */
-            new FocusRequester(activeField.getTextComponent());
+            activeField.getTextComponent().requestFocus();
         }
     }
 
@@ -288,7 +320,7 @@ class EntryEditorTab {
         try {
             updating = true;
             for (FieldEditor editor : editors.values()) {
-                String toSet = entry.getFieldOptional(editor.getFieldName()).orElse("");
+                String toSet = entry.getField(editor.getFieldName()).orElse("");
                 if (!toSet.equals(editor.getText())) {
                     editor.setText(toSet);
                 }
@@ -303,7 +335,12 @@ class EntryEditorTab {
         if (!editors.containsKey(field)) {
             return false;
         }
+
         FieldEditor fieldEditor = editors.get(field);
+        if (fieldEditor.getText().equals(content)){
+            return true;
+        }
+
         // trying to preserve current edit position (fixes SF bug #1285)
         if(fieldEditor.getTextComponent() instanceof JTextComponent) {
             int initialCaretPosition = ((JTextComponent) fieldEditor).getCaretPosition();

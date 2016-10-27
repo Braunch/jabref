@@ -1,18 +1,3 @@
-/*  Copyright (C) 2003-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.gui;
 
 import java.awt.Component;
@@ -43,12 +28,13 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.ListSelectionModel;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionListener;
 
 import net.sf.jabref.Globals;
+import net.sf.jabref.logic.bibtexkeypattern.BibtexKeyPatternUtil;
 import net.sf.jabref.logic.l10n.Localization;
-import net.sf.jabref.logic.labelpattern.LabelPatternUtil;
 import net.sf.jabref.preferences.JabRefPreferences;
 
 /**
@@ -122,7 +108,8 @@ class FieldSetComponent extends JPanel implements ActionListener {
         }
 
         con.weighty = 1;
-        sp = new JScrollPane(list, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        sp = new JScrollPane(list, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         gbl.setConstraints(sp, con);
         add(sp);
         con.weighty = 0;
@@ -179,7 +166,7 @@ class FieldSetComponent extends JPanel implements ActionListener {
         gbl.setConstraints(add, con);
         add(add);
 
-        FieldListFocusListener fieldListFocusListener = new FieldListFocusListener(list);
+        FieldListFocusListener<String> fieldListFocusListener = new FieldListFocusListener<>(list);
         list.addFocusListener(fieldListFocusListener);
     }
 
@@ -247,7 +234,7 @@ class FieldSetComponent extends JPanel implements ActionListener {
             return;
         }
 
-        String testString = LabelPatternUtil.checkLegalKey(s,
+        String testString = BibtexKeyPatternUtil.checkLegalKey(s,
                 Globals.prefs.getBoolean(JabRefPreferences.ENFORCE_LEGAL_BIBTEX_KEY));
         if (!testString.equals(s) || (s.indexOf('&') >= 0)) {
             // Report error and exit.

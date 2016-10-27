@@ -1,18 +1,3 @@
-/*  Copyright (C) 2003-2011 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.gui.menus;
 
 import java.awt.event.ActionEvent;
@@ -22,8 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.Icon;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -34,13 +19,13 @@ import javax.swing.event.PopupMenuListener;
 import net.sf.jabref.Globals;
 import net.sf.jabref.gui.BasePanel;
 import net.sf.jabref.gui.EntryMarker;
-import net.sf.jabref.gui.FileListTableModel;
 import net.sf.jabref.gui.IconTheme;
 import net.sf.jabref.gui.JabRefFrame;
 import net.sf.jabref.gui.actions.Actions;
+import net.sf.jabref.gui.filelist.FileListTableModel;
+import net.sf.jabref.gui.keyboard.KeyBinding;
 import net.sf.jabref.gui.mergeentries.FetchAndMergeEntry;
 import net.sf.jabref.gui.worker.MarkEntriesAction;
-import net.sf.jabref.logic.groups.GroupTreeNode;
 import net.sf.jabref.logic.l10n.Localization;
 import net.sf.jabref.model.entry.BibEntry;
 import net.sf.jabref.model.entry.FieldName;
@@ -53,7 +38,6 @@ import net.sf.jabref.specialfields.ReadStatus;
 import net.sf.jabref.specialfields.Relevance;
 import net.sf.jabref.specialfields.SpecialField;
 import net.sf.jabref.specialfields.SpecialFieldValue;
-import net.sf.jabref.specialfields.SpecialFieldsUtils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -65,8 +49,6 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
     private final JMenuItem groupAdd;
     private final JMenuItem groupRemove;
     private final JMenuItem groupMoveTo;
-    private final JCheckBoxMenuItem floatMarked = new JCheckBoxMenuItem(Localization.lang("Float marked entries"),
-            Globals.prefs.getBoolean(JabRefPreferences.FLOAT_MARKED_ENTRIES));
 
 
     public RightClickMenu(JabRefFrame frame, BasePanel panel) {
@@ -84,46 +66,51 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
         addPopupMenuListener(this);
 
         JMenu copySpecialMenu = new JMenu(Localization.lang("Copy") + "...");
-        copySpecialMenu.add(new GeneralAction(Actions.COPY_KEY, Localization.lang("Copy BibTeX key")));
-        copySpecialMenu.add(new GeneralAction(Actions.COPY_CITE_KEY, Localization.lang("Copy \\cite{BibTeX key}")));
-        copySpecialMenu
-                .add(new GeneralAction(Actions.COPY_KEY_AND_TITLE, Localization.lang("Copy BibTeX key and title")));
+        copySpecialMenu.add(new GeneralAction(Actions.COPY_KEY, Localization.lang("Copy BibTeX key"), KeyBinding.COPY_BIBTEX_KEY));
+        copySpecialMenu.add(new GeneralAction(Actions.COPY_CITE_KEY, Localization.lang("Copy \\cite{BibTeX key}"), KeyBinding.COPY_CITE_BIBTEX_KEY));
+        copySpecialMenu.add(new GeneralAction(Actions.COPY_KEY_AND_TITLE, Localization.lang("Copy BibTeX key and title"), KeyBinding.COPY_BIBTEX_KEY_AND_TITLE));
+        copySpecialMenu.add(new GeneralAction(Actions.COPY_KEY_AND_LINK, Localization.lang("Copy BibTeX key and link"), KeyBinding.COPY_BIBTEX_KEY_AND_LINK));
         copySpecialMenu.add(new GeneralAction(Actions.EXPORT_TO_CLIPBOARD, Localization.lang("Export to clipboard"),
                 IconTheme.JabRefIcon.EXPORT_TO_CLIPBOARD.getSmallIcon()));
 
-        add(new GeneralAction(Actions.COPY, Localization.lang("Copy"), IconTheme.JabRefIcon.COPY.getSmallIcon()));
+        add(new GeneralAction(Actions.COPY, Localization.lang("Copy"), IconTheme.JabRefIcon.COPY.getSmallIcon(), KeyBinding.COPY));
         add(copySpecialMenu);
-        add(new GeneralAction(Actions.PASTE, Localization.lang("Paste"), IconTheme.JabRefIcon.PASTE.getSmallIcon()));
-        add(new GeneralAction(Actions.CUT, Localization.lang("Cut"), IconTheme.JabRefIcon.CUT.getSmallIcon()));
-        add(new GeneralAction(Actions.DELETE, Localization.lang("Delete"), IconTheme.JabRefIcon.DELETE_ENTRY.getSmallIcon()));
+        add(new GeneralAction(Actions.PASTE, Localization.lang("Paste"), IconTheme.JabRefIcon.PASTE.getSmallIcon(), KeyBinding.PASTE));
+        add(new GeneralAction(Actions.CUT, Localization.lang("Cut"), IconTheme.JabRefIcon.CUT.getSmallIcon(), KeyBinding.CUT));
+        add(new GeneralAction(Actions.DELETE, Localization.lang("Delete"), IconTheme.JabRefIcon.DELETE_ENTRY.getSmallIcon(), KeyBinding.DELETE_ENTRY));
+        GeneralAction printPreviewAction = new GeneralAction(Actions.PRINT_PREVIEW, Localization.lang("Print entry preview"), IconTheme.JabRefIcon.PRINTED.getSmallIcon());
+        printPreviewAction.setEnabled(!multiple);
+        add(printPreviewAction);
+
         addSeparator();
 
         add(new GeneralAction(Actions.SEND_AS_EMAIL, Localization.lang("Send as email"), IconTheme.JabRefIcon.EMAIL.getSmallIcon()));
         addSeparator();
 
         JMenu markSpecific = JabRefFrame.subMenu(Localization.menuTitle("Mark specific color"));
+        markSpecific.setIcon(IconTheme.JabRefIcon.MARK_ENTRIES.getSmallIcon());
         for (int i = 0; i < EntryMarker.MAX_MARKING_LEVEL; i++) {
             markSpecific.add(new MarkEntriesAction(frame, i).getMenuItem());
         }
 
         if (multiple) {
-            add(new GeneralAction(Actions.MARK_ENTRIES, Localization.lang("Mark entries"), IconTheme.JabRefIcon.MARK_ENTRIES.getSmallIcon()));
+            add(new GeneralAction(Actions.MARK_ENTRIES, Localization.lang("Mark entries"), IconTheme.JabRefIcon.MARK_ENTRIES.getSmallIcon(), KeyBinding.MARK_ENTRIES));
             add(markSpecific);
-            add(new GeneralAction(Actions.UNMARK_ENTRIES, Localization.lang("Unmark entries"), IconTheme.JabRefIcon.UNMARK_ENTRIES.getSmallIcon()));
+            add(new GeneralAction(Actions.UNMARK_ENTRIES, Localization.lang("Unmark entries"), IconTheme.JabRefIcon.UNMARK_ENTRIES.getSmallIcon(), KeyBinding.UNMARK_ENTRIES));
         } else if (be != null) {
-            Optional<String> marked = be.getFieldOptional(FieldName.MARKED_INTERNAL);
+            Optional<String> marked = be.getField(FieldName.MARKED_INTERNAL);
             // We have to check for "" too as the marked field may be empty
             if ((!marked.isPresent()) || marked.get().isEmpty()) {
-                add(new GeneralAction(Actions.MARK_ENTRIES, Localization.lang("Mark entry"), IconTheme.JabRefIcon.MARK_ENTRIES.getSmallIcon()));
+                add(new GeneralAction(Actions.MARK_ENTRIES, Localization.lang("Mark entry"), IconTheme.JabRefIcon.MARK_ENTRIES.getSmallIcon(), KeyBinding.MARK_ENTRIES));
                 add(markSpecific);
             } else {
                 add(markSpecific);
-                add(new GeneralAction(Actions.UNMARK_ENTRIES, Localization.lang("Unmark entry"), IconTheme.JabRefIcon.UNMARK_ENTRIES.getSmallIcon()));
+                add(new GeneralAction(Actions.UNMARK_ENTRIES, Localization.lang("Unmark entry"), IconTheme.JabRefIcon.UNMARK_ENTRIES.getSmallIcon(), KeyBinding.UNMARK_ENTRIES));
             }
         }
 
-        if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SPECIALFIELDSENABLED)) {
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_RANKING)) {
+        if (Globals.prefs.getBoolean(JabRefPreferences.SPECIALFIELDSENABLED)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_RANKING)) {
                 JMenu rankingMenu = new JMenu();
                 RightClickMenu.populateSpecialFieldMenu(rankingMenu, Rank.getInstance(), frame);
                 add(rankingMenu);
@@ -132,23 +119,23 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
             // TODO: multiple handling for relevance and quality-assurance
             // if multiple values are selected ("if (multiple)"), two options (set / clear) should be offered
             // if one value is selected either set or clear should be offered
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_RELEVANCE)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_RELEVANCE)) {
                 add(Relevance.getInstance().getValues().get(0).getMenuAction(frame));
             }
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_QUALITY)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_QUALITY)) {
                 add(Quality.getInstance().getValues().get(0).getMenuAction(frame));
             }
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_PRINTED)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_PRINTED)) {
                 add(Printed.getInstance().getValues().get(0).getMenuAction(frame));
             }
 
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_PRIORITY)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_PRIORITY)) {
                 JMenu priorityMenu = new JMenu();
                 RightClickMenu.populateSpecialFieldMenu(priorityMenu, Priority.getInstance(), frame);
                 add(priorityMenu);
             }
 
-            if (Globals.prefs.getBoolean(SpecialFieldsUtils.PREF_SHOWCOLUMN_READ)) {
+            if (Globals.prefs.getBoolean(JabRefPreferences.SHOWCOLUMN_READ)) {
                 JMenu readStatusMenu = new JMenu();
                 RightClickMenu.populateSpecialFieldMenu(readStatusMenu, ReadStatus.getInstance(), frame);
                 add(readStatusMenu);
@@ -158,56 +145,43 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
 
         addSeparator();
 
-        add(new GeneralAction(Actions.OPEN_FOLDER, Localization.lang("Open folder")) {
-            {
-                if (!isFieldSetForSelectedEntry(FieldName.FILE)) {
-                    this.setEnabled(false);
-                }
-            }
-        });
+        GeneralAction openFolderAction = new GeneralAction(Actions.OPEN_FOLDER, Localization.lang("Open folder"),
+                KeyBinding.OPEN_FOLDER);
+        openFolderAction.setEnabled(isFieldSetForSelectedEntry(FieldName.FILE));
+        add(openFolderAction);
 
-        add(new GeneralAction(Actions.OPEN_EXTERNAL_FILE, Localization.lang("Open file"), getFileIconForSelectedEntry()) {
-            {
-                if (!isFieldSetForSelectedEntry(FieldName.FILE)) {
-                    this.setEnabled(false);
-                }
-            }
-        });
+        GeneralAction openFileAction = new GeneralAction(Actions.OPEN_EXTERNAL_FILE, Localization.lang("Open file"),
+                getFileIconForSelectedEntry(), KeyBinding.OPEN_FILE);
+        openFileAction.setEnabled(isFieldSetForSelectedEntry(FieldName.FILE));
+        add(openFileAction);
 
-        add(new GeneralAction(Actions.OPEN_URL, Localization.lang("Open URL or DOI"), IconTheme.JabRefIcon.WWW.getSmallIcon()) {
-            {
-                if(!(isFieldSetForSelectedEntry(FieldName.URL) || isFieldSetForSelectedEntry(FieldName.DOI))) {
-                    this.setEnabled(false);
-                }
-            }
-        });
+        GeneralAction openUrlAction = new GeneralAction(Actions.OPEN_URL, Localization.lang("Open URL or DOI"),
+                IconTheme.JabRefIcon.WWW.getSmallIcon(), KeyBinding.OPEN_URL_OR_DOI);
+        openUrlAction.setEnabled(isFieldSetForSelectedEntry(FieldName.URL) || isFieldSetForSelectedEntry(FieldName.DOI));
+        add(openUrlAction);
 
         addSeparator();
 
         add(typeMenu);
 
-        add(new GeneralAction(Actions.MERGE_WITH_FETCHED_ENTRY,
-                Localization.lang("Get BibTeX data from %0", FetchAndMergeEntry.getDisplayNameOfSupportedFields())) {
-            {
-                if (!(isAnyFieldSetForSelectedEntry(FetchAndMergeEntry.SUPPORTED_FIELDS))) {
-                    this.setEnabled(false);
-                }
-            }
-        });
+        GeneralAction mergeFetchedEntryAction = new GeneralAction(Actions.MERGE_WITH_FETCHED_ENTRY,
+                Localization.lang("Get BibTeX data from %0", FetchAndMergeEntry.getDisplayNameOfSupportedFields()));
+        mergeFetchedEntryAction.setEnabled(isAnyFieldSetForSelectedEntry(FetchAndMergeEntry.SUPPORTED_FIELDS));
+        add(mergeFetchedEntryAction);
+
         add(frame.getMassSetField());
-        add(new GeneralAction(Actions.ADD_FILE_LINK, Localization.lang("Attach file"), IconTheme.JabRefIcon.ATTACH_FILE.getSmallIcon()));
+
+        GeneralAction attachFileAction = new GeneralAction(Actions.ADD_FILE_LINK, Localization.lang("Attach file"),
+                IconTheme.JabRefIcon.ATTACH_FILE.getSmallIcon());
+        attachFileAction.setEnabled(!multiple);
+        add(attachFileAction);
+
         add(frame.getManageKeywords());
-        add(new GeneralAction(Actions.MERGE_ENTRIES,
-                Localization.lang("Merge entries") + "...",
-                IconTheme.JabRefIcon.MERGE_ENTRIES.getSmallIcon()) {
 
-            {
-                if (!(areExactlyTwoEntriesSelected())) {
-                    this.setEnabled(false);
-                }
-            }
-
-        });
+        GeneralAction mergeEntriesAction = new GeneralAction(Actions.MERGE_ENTRIES,
+                Localization.lang("Merge entries") + "...", IconTheme.JabRefIcon.MERGE_ENTRIES.getSmallIcon());
+        mergeEntriesAction.setEnabled(areExactlyTwoEntriesSelected());
+        add(mergeEntriesAction);
 
         addSeparator(); // for "add/move/remove to/from group" entries (appended here)
 
@@ -249,16 +223,11 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
     @Override
     public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
         panel.storeCurrentEdit();
-        GroupTreeNode groups = panel.getBibDatabaseContext().getMetaData().getGroups();
-        if (groups == null) {
-            groupAdd.setEnabled(false);
-            groupRemove.setEnabled(false);
-            groupMoveTo.setEnabled(false);
-        } else {
-            groupAdd.setEnabled(true);
-            groupRemove.setEnabled(true);
-            groupMoveTo.setEnabled(true);
-        }
+
+        boolean groupsPresent = panel.getBibDatabaseContext().getMetaData().getGroups().isPresent();
+        groupAdd.setEnabled(groupsPresent);
+        groupRemove.setEnabled(groupsPresent);
+        groupMoveTo.setEnabled(groupsPresent);
     }
 
 
@@ -288,7 +257,7 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
         if (panel.getMainTable().getSelectedRowCount() == 1) {
             BibEntry entry = panel.getMainTable().getSelected().get(0);
             if(entry.hasField(FieldName.FILE)) {
-                JLabel label = FileListTableModel.getFirstLabel(entry.getFieldOptional(FieldName.FILE).get());
+                JLabel label = FileListTableModel.getFirstLabel(entry.getField(FieldName.FILE).get());
                 if (label != null) {
                     return label.getIcon();
                 }
@@ -309,6 +278,18 @@ public class RightClickMenu extends JPopupMenu implements PopupMenuListener {
         public GeneralAction(String command, String name, Icon icon) {
             super(name, icon);
             this.command = command;
+        }
+
+        public GeneralAction(String command, String name, KeyBinding key) {
+            super(name);
+            this.command = command;
+            putValue(Action.ACCELERATOR_KEY, Globals.getKeyPrefs().getKey(key));
+        }
+
+        public GeneralAction(String command, String name, Icon icon, KeyBinding key) {
+            super(name, icon);
+            this.command = command;
+            putValue(Action.ACCELERATOR_KEY, Globals.getKeyPrefs().getKey(key));
         }
 
         @Override

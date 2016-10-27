@@ -1,18 +1,3 @@
-/*  Copyright (C) 2003-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 package net.sf.jabref.gui.groups;
 
 import java.awt.BorderLayout;
@@ -23,6 +8,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -45,6 +31,8 @@ import javax.swing.JPopupMenu;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -58,30 +46,33 @@ import javax.swing.undo.AbstractUndoableEdit;
 import javax.swing.undo.CompoundEdit;
 
 import net.sf.jabref.Globals;
-import net.sf.jabref.MetaData;
 import net.sf.jabref.gui.BasePanel;
 import net.sf.jabref.gui.IconTheme;
 import net.sf.jabref.gui.JabRefFrame;
 import net.sf.jabref.gui.SidePaneComponent;
 import net.sf.jabref.gui.SidePaneManager;
 import net.sf.jabref.gui.help.HelpAction;
+import net.sf.jabref.gui.keyboard.KeyBinding;
 import net.sf.jabref.gui.maintable.MainTableDataModel;
 import net.sf.jabref.gui.undo.NamedCompound;
 import net.sf.jabref.gui.worker.AbstractWorker;
-import net.sf.jabref.logic.groups.AbstractGroup;
-import net.sf.jabref.logic.groups.AllEntriesGroup;
-import net.sf.jabref.logic.groups.EntriesGroupChange;
-import net.sf.jabref.logic.groups.GroupTreeNode;
-import net.sf.jabref.logic.groups.MoveGroupChange;
 import net.sf.jabref.logic.help.HelpFile;
 import net.sf.jabref.logic.l10n.Localization;
-import net.sf.jabref.logic.search.SearchMatcher;
-import net.sf.jabref.logic.search.matchers.MatcherSet;
-import net.sf.jabref.logic.search.matchers.MatcherSets;
-import net.sf.jabref.logic.search.matchers.NotMatcher;
 import net.sf.jabref.model.entry.BibEntry;
+import net.sf.jabref.model.groups.AbstractGroup;
+import net.sf.jabref.model.groups.AllEntriesGroup;
+import net.sf.jabref.model.groups.EntriesGroupChange;
+import net.sf.jabref.model.groups.GroupTreeNode;
+import net.sf.jabref.model.groups.MoveGroupChange;
+import net.sf.jabref.model.groups.event.GroupUpdatedEvent;
+import net.sf.jabref.model.metadata.MetaData;
+import net.sf.jabref.model.search.SearchMatcher;
+import net.sf.jabref.model.search.matchers.MatcherSet;
+import net.sf.jabref.model.search.matchers.MatcherSets;
+import net.sf.jabref.model.search.matchers.NotMatcher;
 import net.sf.jabref.preferences.JabRefPreferences;
 
+import com.google.common.eventbus.Subscribe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -137,6 +128,8 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
     private final AddToGroupAction moveToGroup = new AddToGroupAction(true);
     private final RemoveFromGroupAction removeFromGroup = new RemoveFromGroupAction();
 
+    private ToggleAction toggleAction;
+
 
     /**
      * The first element for each group defines which field to use for the quicksearch. The next two define the name and
@@ -144,6 +137,11 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
      */
     public GroupSelector(JabRefFrame frame, SidePaneManager manager) {
         super(manager, IconTheme.JabRefIcon.TOGGLE_GROUPS.getIcon(), Localization.lang("Groups"));
+
+        toggleAction = new ToggleAction(Localization.menuTitle("Toggle groups interface"),
+                Localization.menuTitle("Toggle groups interface"),
+                Globals.getKeyPrefs().getKey(KeyBinding.TOGGLE_GROUPS_INTERFACE),
+                IconTheme.JabRefIcon.TOGGLE_GROUPS);
 
         this.frame = frame;
         hideNonHits = new JRadioButtonMenuItem(Localization.lang("Hide non-hits"),
@@ -255,7 +253,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
         helpButton.setMargin(butIns);
         openSettings.setMargin(butIns);
         newButton.addActionListener(e -> {
-            GroupDialog gd = new GroupDialog(frame, panel, null);
+            GroupDialog gd = new GroupDialog(frame, null);
             gd.setVisible(true);
             if (gd.okPressed()) {
                 AbstractGroup newGroup = gd.getResultingGroup();
@@ -327,8 +325,8 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
         groupsTree = new GroupsTree(this);
         groupsTree.addTreeSelectionListener(this);
 
-        JScrollPane groupsTreePane = new JScrollPane(groupsTree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        JScrollPane groupsTreePane = new JScrollPane(groupsTree, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         groupsTreePane.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
         con.gridwidth = GridBagConstraints.REMAINDER;
         con.weighty = 1;
@@ -342,19 +340,19 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
         setEditMode(editModeIndicator);
         definePopup();
         NodeAction moveNodeUpAction = new MoveNodeUpAction();
-        moveNodeUpAction.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_UP, KeyEvent.CTRL_MASK));
+        moveNodeUpAction.putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.CTRL_MASK));
         NodeAction moveNodeDownAction = new MoveNodeDownAction();
         moveNodeDownAction.putValue(Action.ACCELERATOR_KEY,
-                KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, KeyEvent.CTRL_MASK));
+                KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_MASK));
         NodeAction moveNodeLeftAction = new MoveNodeLeftAction();
         moveNodeLeftAction.putValue(Action.ACCELERATOR_KEY,
-                KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_MASK));
+                KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_MASK));
         NodeAction moveNodeRightAction = new MoveNodeRightAction();
         moveNodeRightAction.putValue(Action.ACCELERATOR_KEY,
-                KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_MASK));
+                KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_MASK));
 
 
-        setGroups(GroupTreeNode.fromGroup(new AllEntriesGroup()));
+        setGroups(GroupTreeNode.fromGroup(new AllEntriesGroup(Localization.lang("All entries"))));
     }
 
     private void definePopup() {
@@ -658,7 +656,11 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
      * selection and expansion state.
      */
     public void revalidateGroups() {
-        revalidateGroups(null);
+        if (SwingUtilities.isEventDispatchThread()) {
+            revalidateGroups(null);
+        } else {
+            SwingUtilities.invokeLater(() -> revalidateGroups(null));
+        }
     }
 
     /**
@@ -718,7 +720,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
         if (panel != null) {// panel may be null if no file is open any more
             panel.getMainTable().getTableModel().updateGroupingState(MainTableDataModel.DisplayOption.DISABLED);
         }
-        frame.groupToggle.setSelected(false);
+        getToggleAction().setSelected(false);
     }
 
     private void setGroups(GroupTreeNode groupsRoot) {
@@ -783,7 +785,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
         public void actionPerformed(ActionEvent e) {
             final GroupTreeNodeViewModel node = getNodeToUse();
             final AbstractGroup oldGroup = node.getNode().getGroup();
-            final GroupDialog gd = new GroupDialog(frame, panel, oldGroup);
+            final GroupDialog gd = new GroupDialog(frame, oldGroup);
             gd.setVisible(true);
             if (gd.okPressed()) {
                 AbstractGroup newGroup = gd.getResultingGroup();
@@ -792,7 +794,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
                         Localization.lang("Assign the original group's entries to this group?"),
                         Localization.lang("Change of Grouping Method"),
                         JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                boolean keepPreviousAssignments = i == JOptionPane.YES_OPTION &&
+                boolean keepPreviousAssignments = (i == JOptionPane.YES_OPTION) &&
                         WarnAssignmentSideEffects.warnAssignmentSideEffects(newGroup, panel.frame());
 
                 AbstractUndoableEdit undoAddPreviousEntries = null;
@@ -830,7 +832,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            final GroupDialog gd = new GroupDialog(frame, panel, null);
+            final GroupDialog gd = new GroupDialog(frame, null);
             gd.setVisible(true);
             if (!gd.okPressed()) {
                 return; // ignore
@@ -861,7 +863,7 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            final GroupDialog gd = new GroupDialog(frame, panel, null);
+            final GroupDialog gd = new GroupDialog(frame, null);
             gd.setVisible(true);
             if (!gd.okPressed()) {
                 return; // ignore
@@ -1212,17 +1214,20 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
     public void setActiveBasePanel(BasePanel panel) {
         super.setActiveBasePanel(panel);
         if (panel == null) { // hide groups
-            frame.getSidePaneManager().hide("groups");
+            frame.getSidePaneManager().hide(GroupSelector.class);
             return;
         }
         MetaData metaData = panel.getBibDatabaseContext().getMetaData();
-        if (metaData.getGroups() == null) {
-            GroupTreeNode newGroupsRoot = GroupTreeNode.fromGroup(new AllEntriesGroup());
+        if (metaData.getGroups().isPresent()) {
+            setGroups(metaData.getGroups().get());
+        } else {
+            GroupTreeNode newGroupsRoot = GroupTreeNode
+                    .fromGroup(new AllEntriesGroup(Localization.lang("All entries")));
             metaData.setGroups(newGroupsRoot);
             setGroups(newGroupsRoot);
-        } else {
-            setGroups(metaData.getGroups());
         }
+
+        metaData.registerListener(this);
 
         synchronized (getTreeLock()) {
             validateTree();
@@ -1260,6 +1265,21 @@ public class GroupSelector extends SidePaneComponent implements TreeSelectionLis
 
     public GroupsTree getGroupsTree() {
         return this.groupsTree;
+    }
+
+    @Subscribe
+    public void listen(GroupUpdatedEvent updateEvent) {
+        setGroups(updateEvent.getMetaData().getGroups().orElse(null));
+    }
+
+    @Override
+    public void grabFocus() {
+        groupsTree.grabFocus();
+    }
+
+    @Override
+    public ToggleAction getToggleAction() {
+        return toggleAction;
     }
 
 }

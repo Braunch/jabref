@@ -14,100 +14,288 @@ We refer to [GitHub issues](https://github.com/JabRef/jabref/issues) by using `#
 ## JavaFX Changes
 (to be moved to `##Changed` as soon as JavaFX is integrated in the main branch)
 - Add tab which shows the MathSciNet review website if the `MRNumber` field is present.
-- Partly switched to new UI technology (JavaFX). Redesigned key bindings dialog.
-
+- Partly switched to new UI technology (JavaFX).
+    - Redesigned about dialog.
+    - Redesigned key bindings dialog.
+    - Redesigned journal abbreviations dialog.
+    - Redesigned error console.
 
 ### Changed
-- Externally fetched information can be merged for entries with an ISBN
-- Externally fetched information can be merged for entries with an ArXiv eprint
-- [#462](https://github.com/JabRef/jabref/issues/462) Extend the OpenConsoleFeature by offering a selection between default terminal emulator and configurable command execution.
-- [#1516](https://github.com/JabRef/jabref/issues/1516) Selected field names are written in uppercase in the entry editor
-- For developers: Moved the bst package into logic. This requires the regeneration of antlr sources, execute: gradlew generateSource
-- [#1026](https://github.com/JabRef/jabref/issues/1026) JabRef does no longer delete user comments outside of BibTeX entries and strings
-- [#1249](https://github.com/JabRef/jabref/issues/1249) Date layout formatter added
-- Undo/redo are enabled/disabled and show the action in the tool tip
-- Added ISBN integrity checker
-- Added filter to not show selected integrity checks
-- Enhance the entry customization dialog to give better visual feedback
-- It is now possible to generate a new BIB database from the citations in an OpenOffice/LibreOffice document
-- The arXiv fetcher now also supports free-text search queries
-- [#1345](https://github.com/JabRef/jabref/issues/1345) Cleanup ISSN
-- It is now possible to add your own lists of protected terms, see Options -> Manage protected terms
-- Automatically generated group names are now converted from LaTeX to Unicode
+- Implementation of eventbased autosave and backup functionality and file synchronization for shared DBs. Related to [#344](https://github.com/JabRef/jabref/issues/344)
+- Source tab in the entry editor displays "BibLaTeX Source" when using biblatex mode
+- [koppor#171](https://github.com/koppor/jabref/issues/171): Add Shortcuts to context menu
+- Add session restoring functionality for shared database. Related to [#1703](https://github.com/JabRef/jabref/issues/1703)
+- Implementation of LiveUpdate for PostgreSQL & Oracle systems. Related to [#970](https://github.com/JabRef/jabref/issues/970).
+- [koppor#31](https://github.com/koppor/jabref/issues/31): Number column in the main table is always Left aligned
+- Added support for [1.0.1 CitationStyles](http://citationstyles.org/)
+- You can set and cycle between different preview styles (including CitationStyles)
+- Added fetcher for [MathSciNet](http://www.ams.org/mathscinet), [zbMATH](https://www.zbmath.org/) and [Astrophysics Data System](http://www.adsabs.harvard.edu/)
+- Improved search:
+  - Search queries consisting of a normal query and a field-based query are now supported (for example, `JabRef AND author == you`)
+  - Implemented [#825](https://github.com/JabRef/jabref/issues/825): Search Bar across all bib files instead each having its own
+  - Implemented [#573](https://github.com/JabRef/jabref/issues/573): Add key shortcut for global search (`ctrl+shift+f`, if the searchfield is empty it will be focused instead)
+  - The search result Window will now show which entry belongs to which bib file
+  - The search result Window will now remember its location
+  - The search result Window won't stay on top anymore if the main Window is focused and will be present in the taskbar
+  - The user can jump from the searchbar to the maintable  with `ctrl+enter`
+  - Implemented [#573 (comment)](https://github.com/JabRef/jabref/issues/573#issuecomment-232284156): Added shortcut: closing the search result window with `ctrl+w`
+- Added integrity check for fields with BibTeX keys, e.g., `crossref` and `related`, to check that the key exists
+- Fields linking to other entries (e.g., `crossref` and `related`) have now specialized editors in the entry editor. Check the tabs "Other fields" and "General".
+- [#1496](https://github.com/JabRef/jabref/issues/1496) Keep track of which entry a downloaded file belongs to
+- Made it possible to download multiple entries in one action
+- [#1506](https://github.com/JabRef/jabref/issues/1506) It is possible to apply two new key modifier `title_case` for Title Case, `capitalize` for Capitalized first character of each word (difference is that title case will leave prepositions etc in lower case), and `sentence_case` for normal sentence case (first word capitalized). In addition `lower_case` and `upper_case` can be used instead of `lower` and `upper`. 
+- Added two new pseudo-fields for search: `anykeyword` to search for a specific keyword and `anyfield` to search in all fields (useful in combination with search in specific fields)
+- [#1813](https://github.com/JabRef/jabref/issues/1813) Import/Export preferences dialog default directory set to working directory
+- [#1897](https://github.com/JabRef/jabref/issues/1897) Implemented integrity check for `year` field: Last four nonpunctuation characters should be numerals
+- Address in MS-Office 2007 xml format is now imported as `location`
+- [#1912](https://github.com/JabRef/jabref/issues/1912) Implemented integrity check for `edition` field: Should have the first letter capitalized (BibTeX), Should contain an integer or a literal (BibLaTeX)
+- The dialog for choosing new entries additionally supports ID-based entry generation
+- `number` field is now exported as `number` field in MS-Office 2007 xml format, if no `issue` field is present and the entry type is not `patent`
+- `note` field is now exported as `comments` field in MS-Office 2007 xml format
+- `comments` field in MS-Office 2007 xml format is now imported as `note` field
+- [#463](https://github.com/JabRef/jabref/issues/463): Disable menu-item and toolbar-buttons while no database is open
+- Implemented integrity check for `note` and `howpublished` field: Should have the first letter capitalized (BibTeX)
+- <kbd>Pos1</kbd> / <kbd>HOME</kbd> now select the first/last entry in the main table and the search result frame.
+- <kbd>UP</kbd> / <kbd>Down</kbd> / <kbd>Tab</kbd> / <kbd>shift+Tab</kbd> in the search result frame have now the same functionality as in the main  table.
+- Importer for MODS format added
+- [#2012](https://github.com/JabRef/jabref/issues/2012) Implemented integrity check for `month` field: Should be an integer or normalized (BibLaTeX), Should be normalized (BibTeX)
+- [#1779](https://github.com/JabRef/jabref/issues/1779) Implemented integrity check for `bibtexkey` field: Empty BibTeX key
+- Prohibit more than one connections to the same shared database.
+- Implemented integrity check for `journaltitle` field: BibLaTeX field only (BibTeX)
+- [#463](https://github.com/JabRef/jabref/issues/463): Disable certain menu items, toolbar buttons and context menu items while multiple entries are selected
+- [#490](https://github.com/JabRef/jabref/issues/490) Added right click menu to main table and entry editor to allow copying doi url
+- [#549](https://github.com/JabRef/jabref/issues/549) Added new shortcut to copy the BibTeX key as a hyperlink to its url to the clipboard
+- Complete vietnam language translation in menu
+- Generalize German translation of database into "Datenbank"
+- Improve language quality of the German translation of shared database
+- Change "Recent files" to "Recent databases" to keep the file menu consistent
+- Customized importer files need to be slightly changed since the class `ImportFormat` was renamed to `Importer`
+- [koppor/#97] (https://github.com/koppor/jabref/issues/97): When importing preferences, the explorer will start where the preferences are last exported
+- [koppor#5](https://github.com/koppor/jabref/issues/5) When entries are found while dropping a pdf with xmp meta data the found entries will be displayed in the import dialog
+- [koppor#61](https://github.com/koppor/jabref/issues/61) Display gray background text in "Author" and "Editor" field to assist newcomers
+- Updated Vietnam translation
+- Added greyed-out suggestion for `year`/`date`/`url` fields
 
 ### Fixed
-- Fixed [#1632](https://github.com/JabRef/jabref/issues/1632) User comments (@Comment) with or without brackets are now kept
+- Fixed [#2089](https://github.com/JabRef/jabref/issues/2089): Fixed faulty cite key generation
+- Fixed [#2092](https://github.com/JabRef/jabref/issues/2092): "None"-button in date picker clears the date field
+- Fixed [#1993](https://github.com/JabRef/jabref/issues/1993): Various optimizations regarding search performance
+- Fixed [koppor#160](https://github.com/koppor/jabref/issues/160): Tooltips now working in the main table
+- Fixed [#2054](https://github.com/JabRef/jabref/issues/2054): Ignoring a new version now works as expected
+- Fixed [#1542](https://github.com/JabRef/jabref/issues/1542): Improved error messages when using fetcher
+- Fixed selecting an entry out of multiple duplicates
+- Fixed [#617](https://github.com/JabRef/jabref/issues/617): `Enter` in global search opens the selected entry & `Enter` in search dialog window opens the selected entry
+- Entries in the SearchResultPanel will be shown correctly (Latex to Unicode)
+- Suggestions in the autocomplete will be shown correctly (Latex to Unicode)
+- Fixed: When searching the first match will be selected if the current selection is no match
+- Selecting an entry in the search result Window will now select the correct entry in the bib file
+- Entries in the SearchResultDialog are now converted to Unicode
+- Suggestions in the autocomplete (search) are now in Unicode
+- Fixed NullPointerException when opening search result window for an untitled database
+- Fixed entry table traversal with Tab (no column traversal thus no double jump)
+- Fixed [#1757](https://github.com/JabRef/jabref/issues/1757): Crash after saving illegal argument in entry editor
+- Fixed [#1663](https://github.com/JabRef/jabref/issues/1663): Better multi-monitor support
+- Fixed [#1882](https://github.com/JabRef/jabref/issues/1882): Crash after saving illegal bibtexkey in entry editor
+- Fixed field `location` containing only city is not exported correctly to MS-Office 2007 xml format
+- Fixed [#1235](https://github.com/JabRef/jabref/issues/1235): Modified Key bindings do not work correctly
+- Fixed field `key` field is not exported to MS-Office 2008 xml format
+- Fixed [#1181](https://github.com/JabRef/jabref/issues/1181) and [#1504](https://github.com/JabRef/jabref/issues/1504): Improved "Normalize to BibTeX name format": Support separated names with commas and colons. Considered name affixes such as "Jr".
+- Fixed download files failed silently when an invalid directory is selected
+- Fixed [#1949](https://github.com/JabRef/jabref/issues/1949): Error message directs to the wrong preference tab
+- Fixed InvalidBackgroundColor flickering with Ctrl-s and File > Save database
+- Fixed loop when pulling changes (shared database) when current selected field has changed
+- Fixed [#1958](https://github.com/JabRef/jabref/issues/1958): Verbatim fields are no longer checked for HTML encoded characters by integrity checks
+- Fixed [#1808](https://github.com/JabRef/jabref/issues/1808): Font preference dialog now keeps changes
+- Fixed [#1937](https://github.com/JabRef/jabref/issues/1937): If no help page for the current chosen language exists, the english help page will be shown
+- Fixed [#2060](https://github.com/JabRef/jabref/issues/2060): Medline fetcher now imports data in UTF-8 encoding
+- Fixed file menu displays wrong hotkey in the German translation
+- Fixed [#2090](https://github.com/JabRef/jabref/issues/#2090): If special fields were not selected, two menu item separator were shown
+- Fixed [#2021](https://github.com/JabRef/jabref/issues/2021): All filetypes can be selected on MacOS again
+- Fixed [#2064](https://github.com/JabRef/jabref/issues/2064): Not all `other fields` are shown on entry change of same type
+- Fixed [#2104](https://github.com/JabRef/jabref/issues/#2104): Crash after saving BibTeX source with parsing error
+- Fixed [#2109](https://github.com/JabRef/jabref/issues/#2109): <kbd>Ctrl-s</kbd> doesn't trigger parsing error message
+- Fixed RTFChars would only use "?" for characters with unicode over the value of 127, now it uses the base character (é -> e instead of ?)
+- Fixed close action of entry editor not working after parsing error corrected
+- Fixed [koppor/#128](https://github.com/koppor/jabref/issues/128): Sensible default settings for "Enable save actions" and "Cleanup"
+
+### Removed
+- Removed 2nd preview style
+- The non-supported feature of being able to define file directories for any extension is removed. Still, it should work for older databases using the legacy `ps` and `pdf` fields, although we strongly encourage using the `file` field.
+- Automatic migration for the `evastar_pdf` field is removed.
+- We removed the customizable "content selectors" since they are replaced by the auto-completion feature
+- Removed optional fields from `other fields` (BibTeX), Removed deprecated fields from `other fields` (BibLaTeX)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## [3.6] - 2016-08-26
+
+### Changed
+- [#462](https://github.com/JabRef/jabref/issues/462) Extend the OpenConsoleFeature by offering a selection between default terminal emulator and configurable command execution.
+- [#970](https://github.com/JabRef/jabref/issues/970): Implementation of shared database support (full system) with event based synchronization for MySQL, PostgreSQL and Oracle database systems.
+- [#1026](https://github.com/JabRef/jabref/issues/1026) JabRef does no longer delete user comments outside of BibTeX entries and strings
+- [#1225](https://github.com/JabRef/jabref/issues/1225): Hotkeys are now consistent
+- [#1249](https://github.com/JabRef/jabref/issues/1249) Date layout formatter added
+- [#1345](https://github.com/JabRef/jabref/issues/1345) Cleanup ISSN
+- [#1516](https://github.com/JabRef/jabref/issues/1516) Selected field names are written in uppercase in the entry editor
+- [#1751](https://github.com/JabRef/jabref/issues/1751) Added tooltip to web search button
+- [#1758](https://github.com/JabRef/jabref/issues/1758) Added a button to open Database Properties dialog help
+- [#1841](https://github.com/JabRef/jabref/issues/1841) The "etal"-string in the Authors layout formatter can now be empty
+- Added EntryTypeFormatter to add camel casing to entry type in layouts, e.g., InProceedings
+- Added print entry preview to the right click menu
+- Added links to JabRef internet resources
+- Added integrity check to avoid non-ASCII characters in BibTeX files
+- Added ISBN integrity checker
+- Added filter to not show selected integrity checks
+- Automatically generated group names are now converted from LaTeX to Unicode
+- Enhance the entry customization dialog to give better visual feedback
+- Externally fetched information can be merged for entries with an ISBN
+- Externally fetched information can be merged for entries with an ArXiv eprint
+- File open dialogs now use default extensions as primary file filter
+- For developers: Moved the bst package into logic. This requires the regeneration of antlr sources, execute: `gradlew generateSource`
+- It is now possible to generate a new BIB database from the citations in an OpenOffice/LibreOffice document
+- It is now possible to add your own lists of protected terms, see Options -> Manage protected terms
+- Improve focus of the maintable after a sidepane gets closed (Before it would focus the toolbar or it would focus the wrong entry)
+- Table row height is adjusted on Windows which is useful for high resolution displays
+- The field name in the layout files for entry type is changed from `bibtextype` to `entrytype`. Please update your existing files as support for `bibtextype` will be removed eventually.
+- The contents of `crossref` and `related` will be automatically updated if a linked entry changes key
+- The information shown in the main table now resolves crossrefs and strings and it can be shown which fields are resolved in this way (Preferences -> Appearance -> Color codes for resolved fields)
+- The formatting of the main table is based on the actual field shown when using e.g. `title/author`
+- The arXiv fetcher now also supports free-text search queries
+- Undo/redo are enabled/disabled and show the action in the tool tip
+- Unified dialogs for opening/saving files
+
+### Fixed
+- Fixed [#636](https://github.com/JabRef/jabref/issues/636): DOI in export filters
+- Fixed [#1257](https://github.com/JabRef/jabref/issues/1324): Preferences for the BibTeX key generator set in a version prior to 3.2 are now migrated automatically to the new version
 - Fixed [#1264](https://github.com/JabRef/jabref/issues/1264): S with caron does not render correctly
+- Fixed [#1288](https://github.com/JabRef/jabref/issues/1288): Newly opened bib-file is not focused
+- Fixed [#1321](https://github.com/JabRef/jabref/issues/1321): LaTeX commands in fields not displayed in the list of references
+- Fixed [#1324](https://github.com/JabRef/jabref/issues/1324): Save-Dialog for Lookup fulltext document now opens in the specified working directory
+- Fixed [#1499](https://github.com/JabRef/jabref/issues/1499): {} braces are now treated correctly in in author/editor
+- Fixed [#1527](https://github.com/JabRef/jabref/issues/1527): 'Get BibTeX data from DOI' Removes Marking
+- Fixed [#1519](https://github.com/JabRef/jabref/issues/1519): The word "Seiten" is automatically removed when fetching info from ISBN
+- Fixed [#1531](https://github.com/JabRef/jabref/issues/1531): `\relax` can be used for abbreviation of author names
+- Fixed [#1554](https://github.com/JabRef/jabref/issues/1554): Import dialog is no longer hidden behind main window
+- Fixed [#1592](https://github.com/JabRef/jabref/issues/1592): LibreOffice: wrong numbers in citation labels
+- Fixed [#1609](https://github.com/JabRef/jabref/issues/1324): Adding a file to an entry opened dialog in the parent folder of the working directory
+- Fixed [#1632](https://github.com/JabRef/jabref/issues/1632): User comments (`@Comment`) with or without brackets are now kept
+- Fixed [#1639](https://github.com/JabRef/jabref/issues/1639): Google Scholar fetching works again.
+- Fixed [#1643](https://github.com/JabRef/jabref/issues/1643): Searching with double quotes in a specific field ignores the last character
+- Fixed [#1669](https://github.com/JabRef/jabref/issues/1669): Dialog for manual connection to OpenOffice/LibreOffice works again on Linux
+- Fixed [#1682](https://github.com/JabRef/jabref/issues/1682): An entry now must have a BibTeX key to be cited in OpenOffice/LibreOffice
+- Fixed [#1687](https://github.com/JabRef/jabref/issues/1687): "month" field ascending/descending sorting swapped
+- Fixed [#1716](https://github.com/JabRef/jabref/issues/1716): `@`-Symbols stored in BibTeX fields no longer break the database
+- Fixed [#1750](https://github.com/JabRef/jabref/issues/1750): BibLaTeX `date` field is now correctly exported as `year` in MS-Office 2007 xml format
+- Fixed [#1760](https://github.com/JabRef/jabref/issues/1760): Preview updated correctly when selecting a single entry after selecting multiple entries
+- Fixed [#1771](https://github.com/JabRef/jabref/issues/1771): Show all supported import types as default
+- Fixed [#1804](https://github.com/JabRef/jabref/issues/1804): Integrity check no longer removes URL field by mistake
+- Fixed: LaTeX characters in author names are now converted to Unicode before export in MS-Office 2007 xml format
+- Fixed: `volume`, `journaltitle`, `issue` and `number`(for patents) fields are now exported correctly in MS-Office 2007 xml format
+- Fixed NullPointerException when clicking OK without specifying a field name in set/clear/rename fields
+- Fixed IndexOutOfBoundsException when trying to download a full text document without selecting an entry
+- Fixed NullPointerException when trying to set a special field or mark an entry through the menu without having an open database
+- Fixed NullPointerException when trying to synchronize file field with an entry without BibTeX key
+- Fixed NullPointerException when importing PDFs and pressing cancel when selecting entry type
+- Fixed a number of issues related to accessing the GUI from outside the EDT
+- Fixed NullPointerException when using BibTeX key pattern `authFirstFull` and the author does not have a "von"-part
+- Fixed NullPointerException when opening Customize entry type dialog without an open database
 - LaTeX to Unicode converter now handles combining accents
 - Fixed NullPointerException when clicking Browse in Journal abbreviations with empty text field
 - Fixed NullPointerException when opening file in Plain text import
 - Fixed NullPointerException when appending database
-- Fixed [#636](https://github.com/JabRef/jabref/issues/636): DOI in export filters
-- Fixed [#1527](https://github.com/JabRef/jabref/issues/1527): 'Get BibTeX data from DOI' Removes Marking
-- Fixed [#1592](https://github.com/JabRef/jabref/issues/1592): LibreOffice: wrong numbers in citation labels
-- The merge entry dialog showed wrong heading after merging from DOI
-- Fixed [#1321](https://github.com/JabRef/jabref/issues/1321): LaTeX commands in fields not displayed in the list of references
-- Fixed [#1639](https://github.com/JabRef/jabref/issues/1639): Google Scholar fetching works again.
+- Fixed NullPointerException when loading a style file that has not got a default style
 - Date fields in the BibLatex standard are now always formatted in the correct way, independent of the preferences
-- Fixed [#1554](https://github.com/JabRef/jabref/issues/1554): Import dialog is no longer hidden behind main window
-- Fixed [#1643](https://github.com/JabRef/jabref/issues/1643): Searching with double quotes in a specific field ignores the last character
-- Fixed [#1288](https://github.com/JabRef/jabref/issues/1288): Newly opened bib-file is not focused
-- Fixed [#1669](https://github.com/JabRef/jabref/issues/1669): Dialog for manual connection to OpenOffice/LibreOffice works again on Linux
-
+- The merge entry dialog showed wrong heading after merging from DOI
+- Manage content selectors now saves edited existing lists again and only marks database as changed when the content selectors are changed
+- When inserting a duplicate the right entry will be selected
+- Preview panel height is now saved immediately, thus is shown correctly if the panel height is changed, closed and opened again
 
 ### Removed
-- It is not longer possible to choose to convert HTML sub- and superscripts to equations
 - [#1610](https://github.com/JabRef/jabref/issues/1610) Removed the possibility to auto show or hide the groups interface
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- It is not longer possible to choose to convert HTML sub- and superscripts to equations
+- Removed option to open right-click menu with ctrl + left-click as it was not working
+- Removed option to disable entry editor when multiple entries are selected as it was not working
+- Removed option to show warning for empty key as it was not working
+- Removed option to show warning for duplicate key as it was not working
+- Removed preview toolbar (since long disabled)
 
 
 ## [3.5] - 2016-07-13
@@ -148,7 +336,6 @@ We refer to [GitHub issues](https://github.com/JabRef/jabref/issues) by using `#
 - Added support for several Biblatex-fields through drop-down lists with valid alternatives
 - Added integrity checker for an odd number of unescaped '#'
 - Implemented [feature request 384](https://sourceforge.net/p/jabref/features/384): The merge entries dialog now show all text and colored differences between the fields
-- Partly switched to new UI technology (JavaFX). Redesigned about dialog.
 - Implemented [#1233](https://github.com/JabRef/jabref/issues/1233): Group side pane now takes up all the remaining space
 - Added integrity check detecting HTML-encoded characters
 - Added missing help files
@@ -157,6 +344,11 @@ We refer to [GitHub issues](https://github.com/JabRef/jabref/issues) by using `#
 - Add LaTeX to Unicode converter as cleanup operation
 - Added an option in the about dialog to easily copy the version information of JabRef
 - Integrity check table can be sorted by clicking on column headings
+- Added \SOFTWARE\Jabref 'Path' registry entry for installation path inside the installer
+- Added an additional icon to distinguish DOI and URL links ([feature request #696](https://github.com/JabRef/jabref/issues/696))
+- Added nbib fields to Medlineplain importer and to MedlineImporter
+- Implemented [#1342](https://github.com/JabRef/jabref/issues/1342): show description of case converters as tooltip 
+- Updated German translation
 
 ### Fixed
 - Fixed [#473](https://github.com/JabRef/jabref/issues/473): Values in an entry containing symbols like ' are now properly escaped for exporting to the database
@@ -492,9 +684,10 @@ Since much functionality has changed during development, a release of this versi
 
 ## 2.11
 
-The changelog of 2.11 and versions before is maintained as [text file](https://github.com/JabRef/jabref/blob/dev_2.11/CHANGELOG) in the [dev_2.11 branch](https://github.com/JabRef/jabref/tree/dev_2.11).
+The changelog of 2.11 and versions before is maintained as [text file](https://github.com/JabRef/jabref/blob/v2.11.1/CHANGELOG) in the [v2.11.1 tag](https://github.com/JabRef/jabref/tree/v2.11.1).
 
-[Unreleased]: https://github.com/JabRef/jabref/compare/v3.5...HEAD
+[Unreleased]: https://github.com/JabRef/jabref/compare/v3.6...HEAD
+[3.6]: https://github.com/JabRef/jabref/compare/v3.5...v3.6
 [3.5]: https://github.com/JabRef/jabref/compare/v3.4...v3.5
 [3.4]: https://github.com/JabRef/jabref/compare/v3.3...v3.4
 [3.3]: https://github.com/JabRef/jabref/compare/v3.2...v3.3

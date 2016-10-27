@@ -1,30 +1,11 @@
-/*  Copyright (C) 2003-2016 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.gui.entryeditor;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Set;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -37,15 +18,12 @@ import javax.swing.text.JTextComponent;
 
 import net.sf.jabref.Globals;
 import net.sf.jabref.gui.BasePanel;
-import net.sf.jabref.gui.FieldContentSelector;
-import net.sf.jabref.gui.JabRefFrame;
 import net.sf.jabref.gui.date.DatePickerButton;
 import net.sf.jabref.gui.desktop.JabRefDesktop;
 import net.sf.jabref.gui.entryeditor.EntryEditor.StoreFieldAction;
 import net.sf.jabref.gui.fieldeditors.FieldEditor;
 import net.sf.jabref.gui.mergeentries.FetchAndMergeEntry;
 import net.sf.jabref.gui.undo.UndoableFieldChange;
-import net.sf.jabref.logic.journals.JournalAbbreviationPreferences;
 import net.sf.jabref.logic.journals.JournalAbbreviationRepository;
 import net.sf.jabref.logic.l10n.Localization;
 import net.sf.jabref.logic.net.URLUtil;
@@ -55,8 +33,6 @@ import net.sf.jabref.logic.util.date.EasyDateFormat;
 import net.sf.jabref.model.database.BibDatabaseMode;
 import net.sf.jabref.model.entry.BibEntry;
 import net.sf.jabref.model.entry.FieldName;
-import net.sf.jabref.model.entry.FieldProperties;
-import net.sf.jabref.model.entry.InternalBibtexFields;
 import net.sf.jabref.model.entry.MonthUtil;
 import net.sf.jabref.preferences.JabRefPreferences;
 
@@ -72,24 +48,16 @@ public class FieldExtraComponents {
      * Add controls for switching between abbreviated and full journal names.
      * If this field also has a FieldContentSelector, we need to combine these.
      *
-     * @param frame
      * @param panel
      * @param editor
      * @param entry
-     * @param contentSelectors
      * @param storeFieldAction
      * @return
      */
-    public static Optional<JComponent> getJournalExtraComponent(JabRefFrame frame, BasePanel panel, FieldEditor editor,
-            BibEntry entry, Set<FieldContentSelector> contentSelectors, StoreFieldAction storeFieldAction) {
+    public static Optional<JComponent> getJournalExtraComponent(BasePanel panel, FieldEditor editor, BibEntry entry,
+            StoreFieldAction storeFieldAction) {
         JPanel controls = new JPanel();
         controls.setLayout(new BorderLayout());
-        if (!panel.getBibDatabaseContext().getMetaData().getContentSelectors(editor.getFieldName()).isEmpty()) {
-            FieldContentSelector ws = new FieldContentSelector(frame, panel, frame, editor, storeFieldAction, false,
-                    ", ");
-            contentSelectors.add(ws);
-            controls.add(ws, BorderLayout.NORTH);
-        }
 
         // Button to toggle abbreviated/full journal names
         JButton button = new JButton(Localization.lang("Toggle abbreviation"));
@@ -97,7 +65,7 @@ public class FieldExtraComponents {
         button.addActionListener(actionEvent -> {
             String text = editor.getText();
             JournalAbbreviationRepository abbreviationRepository = Globals.journalAbbreviationLoader
-                    .getRepository(JournalAbbreviationPreferences.fromPreferences(Globals.prefs));
+                    .getRepository(Globals.prefs.getJournalAbbreviationPreferences());
             if (abbreviationRepository.isKnownName(text)) {
                 String s = abbreviationRepository.getNextAbbreviation(text).orElse(text);
 
@@ -413,41 +381,6 @@ public class FieldExtraComponents {
     }
 
     /**
-     * Set up a drop target for URLs for fields with EXTRA_URL
-     *
-     * @param fieldEditor
-     * @param storeFieldAction
-     * @return
-     */
-    public static Optional<JComponent> getURLExtraComponent(FieldEditor fieldEditor,
-            StoreFieldAction storeFieldAction) {
-        ((JComponent) fieldEditor).setDropTarget(new DropTarget((Component) fieldEditor, DnDConstants.ACTION_NONE,
-                new SimpleUrlDragDrop(fieldEditor, storeFieldAction)));
-
-        return Optional.empty();
-    }
-
-    /**
-     * Return a button opening a content selector for fields where one exists
-     *
-     * @param frame
-     * @param panel
-     * @param editor
-     * @param contentSelectors
-     * @param storeFieldAction
-     * @return
-     */
-    public static Optional<JComponent> getSelectorExtraComponent(JabRefFrame frame, BasePanel panel, FieldEditor editor,
-            Set<FieldContentSelector> contentSelectors, StoreFieldAction storeFieldAction) {
-        FieldContentSelector ws = new FieldContentSelector(frame, panel, frame, editor,
-                storeFieldAction, false,
-                InternalBibtexFields.getFieldExtras(editor.getFieldName())
-                        .contains(FieldProperties.PERSON_NAMES) ? " and " : ", ");
-        contentSelectors.add(ws);
-        return Optional.of(ws);
-    }
-
-    /**
      * Set up field such that double click inserts the current date
      * If isDataPicker is True, a button with a data picker is returned
      *
@@ -580,53 +513,6 @@ public class FieldExtraComponents {
             entryEditor.updateField(fieldEditor);
         });
         return Optional.of(gender);
-
-    }
-
-    /**
-     * Return a button which allows to go to the parent entry of the crossref field
-     * @param fieldEditor The FieldEditor component to get the entry key from
-     * @param panel The current BasePanel
-     * @return
-     */
-
-    public static Optional<JComponent> getCrossrefExtraComponent(FieldEditor fieldEditor,
-            BasePanel panel) {
-        JButton button = new JButton(Localization.lang("Select"));
-        JTextComponent crossref = (JTextComponent) fieldEditor;
-
-        button.addActionListener(
-                actionEvent -> panel.getDatabase().getEntryByKey(crossref.getText()).ifPresent(e -> panel.highlightEntry(e))
-        );
-
-        // enable/disable button
-        crossref.getDocument().addDocumentListener(new DocumentListener() {
-
-            @Override
-            public void changedUpdate(DocumentEvent documentEvent) {
-                checkValidKey();
-            }
-
-            @Override
-            public void insertUpdate(DocumentEvent documentEvent) {
-                checkValidKey();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent documentEvent) {
-                checkValidKey();
-            }
-
-            private void checkValidKey() {
-                if (panel.getDatabase().getEntryByKey(crossref.getText()) != null) {
-                    button.setEnabled(true);
-                } else {
-                    button.setEnabled(false);
-                }
-            }
-        });
-
-        return Optional.of(button);
 
     }
 

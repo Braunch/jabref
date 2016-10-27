@@ -8,7 +8,7 @@ We also have [code howtos](https://github.com/JabRef/jabref/wiki/Code-Howtos) an
 For newcomers, [FLOSS Coach](http://www.flosscoach.com/) might be helpful.
 It contains steps to get started with JabRef development.
 
-In case you have any questions, you can use our [developers mailinglist](https://lists.sourceforge.net/lists/listinfo/jabref-devel).
+In case you have any question, do not hesitate to write one of our [JabRef developers](https://github.com/orgs/JabRef/teams/developers) an email.
 
 
 ## Formal requirements for a pull request
@@ -42,8 +42,7 @@ More information on this can be found via `man git-shortlog`.
 Please, **do not add yourself at `@authors`**.
 The contribution information is tracked via the version control system.
 
-We are currently in transition from [GPL](https://tldrlegal.com/license/gnu-general-public-license-v2) to the [MIT license](https://tldrlegal.com/license/mit-license).
-Thus, all your contributions are considered being made under MIT license.
+Your contribution is considered being made under [MIT license](https://tldrlegal.com/license/mit-license).
 
 
 ### Write a good commit message
@@ -85,7 +84,7 @@ because <additional rationale>.
 Add new Localization.lang("KEY") to Java file.
 Tests fail. In the test output a snippet is generated which must be added to the English translation file. There is also a snippet generated for the non-English files, but this is irrelevant.
 Add snippet to English translation file located at `src/main/resources/l10n/JabRef_en.properties`
-With `gradlew generateMissingTranslationKeys` the "KEY" is added to the other translation files as well.
+With `gradlew localizationUpdate` the "KEY" is added to the other translation files as well.
 Tests are green again.
 
 You can also directly run the specific test in your IDE. The test "LocalizationConsistencyTest" is placed under `src/test/java/net.sf.jabref.logic.l10n/LocalizationConsistencyTest.java`
@@ -101,4 +100,4 @@ You can add the prefix `[WIP]` to indicate that the pull request is not yet comp
 
 [commit guidelines section of Pro Git]: http://git-scm.com/book/en/Distributed-Git-Contributing-to-a-Project#Commit-Guidelines
 [good commit message]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-[help documentation]: https://help.github.com/articles/using-pull-requests/
+[help documentation]: https://help.github.com/articles/about-pull-requests/

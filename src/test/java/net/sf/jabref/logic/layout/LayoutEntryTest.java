@@ -5,14 +5,12 @@ import java.io.StringReader;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import net.sf.jabref.Globals;
 import net.sf.jabref.logic.journals.JournalAbbreviationLoader;
 import net.sf.jabref.model.entry.BibEntry;
 import net.sf.jabref.preferences.JabRefPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
@@ -25,11 +23,7 @@ import static org.mockito.Mockito.mock;
  * To test the Highlighting Feature, an instance of LayoutEntry will be instantiated via Layout and LayoutHelper.
  * With these instance the doLayout() Method is called several times for each test case.
  * To simulate a search, a BibEntry will be created, which will be used by LayoutEntry.
- * The definition of the search is set by
- * <p/>
- * LayoutEntry.setWordsToHighlight(words); and
- * Globals.prefs.putBoolean("caseSensitiveSearch", false);
- * <p/>
+ *
  * There are five test cases:
  * - The shown result text has no words which should be highlighted.
  * - There is one word which will be highlighted ignoring case sensitivity.
@@ -50,10 +44,6 @@ public class LayoutEntryTest {
      */
     @Before
     public void setUp() {
-        if (Globals.prefs == null) {
-            Globals.prefs = JabRefPreferences.getInstance();
-            Globals.prefs.putBoolean("highLightWords", Boolean.TRUE);
-        }
 
         // create Bibtext Entry
 
@@ -87,7 +77,7 @@ public class LayoutEntryTest {
     public String layout(String layoutFile, BibEntry entry, Optional<Pattern> highlightPattern) throws IOException {
         StringReader sr = new StringReader(layoutFile.replace("__NEWLINE__", "\n"));
         Layout layout = new LayoutHelper(sr,
-                LayoutFormatterPreferences.fromPreferences(Globals.prefs, mock(JournalAbbreviationLoader.class)))
+                JabRefPreferences.getInstance().getLayoutFormatterPreferences(mock(JournalAbbreviationLoader.class)))
                         .getLayoutFromText();
 
         return layout.doLayout(entry, null, highlightPattern);
@@ -101,7 +91,6 @@ public class LayoutEntryTest {
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testNoHighlighting() throws IOException {
         // say that this bibtex object was found
         mBTE.setSearchHit(true);

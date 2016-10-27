@@ -1,22 +1,15 @@
-/*  Copyright (C) 2003-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
 package net.sf.jabref.logic.error;
 
-import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import javafx.application.Platform;
+
+import net.sf.jabref.logic.logging.LogMessages;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.message.SimpleMessage;
 
 /**
  * Allows to eavesdrop on an out and an err stream.
@@ -25,12 +18,14 @@ import java.io.PrintStream;
  */
 public class StreamEavesdropper {
 
-    private final ByteArrayOutputStream errByteStream = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream outByteStream = new ByteArrayOutputStream();
-
     private final PrintStream systemOut;
     private final PrintStream systemErr;
 
+
+    public StreamEavesdropper(PrintStream systemOut, PrintStream systemErr) {
+        this.systemOut = systemOut;
+        this.systemErr = systemErr;
+    }
 
     public static StreamEavesdropper eavesdropOnSystem() {
         StreamEavesdropper streamEavesdropper = new StreamEavesdropper(System.out, System.err);
@@ -39,27 +34,50 @@ public class StreamEavesdropper {
         return streamEavesdropper;
     }
 
-    public StreamEavesdropper(PrintStream systemOut, PrintStream systemErr) {
-        this.systemOut = systemOut;
-        this.systemErr = systemErr;
-    }
-
+    /**
+     * Return a new {@code PrintStream} which also creates a new log event with {@link Level#WARN} for each message and forwards it to the {@link LogMessages} archive.
+     *
+     * @return a PrintStream
+     */
     public PrintStream getOutStream() {
-        PrintStream consoleOut = new PrintStream(outByteStream);
-        return new TeeStream(consoleOut, systemOut);
+        return new PrintStream(systemOut) {
+            @Override
+            public void write(byte[] buf, int off, int len) {
+                super.write(buf, off, len);
+                String message = new String(buf, off, len);
+                addToLog(message, Level.WARN);
+            }
+        };
     }
 
+    /**
+     * Return a new {@code PrintStream} which also creates a new log event with {@link Level#ERROR} for each message and forwards it to the {@link LogMessages} archive.
+     *
+     * @return a PrintStream
+     */
     public PrintStream getErrStream() {
-        PrintStream consoleErr = new PrintStream(errByteStream);
-        return new TeeStream(consoleErr, systemErr);
+        return new PrintStream(systemErr) {
+            @Override
+            public void write(byte[] buf, int off, int len) {
+                super.write(buf, off, len);
+                String message = new String(buf, off, len);
+                addToLog(message, Level.ERROR);
+            }
+        };
     }
 
-    public String getErrorMessages() {
-        return errByteStream.toString();
-    }
-
-    public String getOutput() {
-        return outByteStream.toString();
+    /**
+     * Creates a new log event with the given parameters and forwards it to the {@link LogMessages} archive.
+     *
+     * @param message message of log event
+     * @param level   level of log event
+     */
+    private void addToLog(String message, Level level) {
+        if (!message.equals(System.lineSeparator())) {
+            String messageFormat = message.replaceAll(System.lineSeparator(), "");
+            LogEvent messageWithLevel = Log4jLogEvent.newBuilder().setMessage(new SimpleMessage(messageFormat)).setLevel(level).build();
+            Platform.runLater(() -> LogMessages.getInstance().add(messageWithLevel));
+        }
     }
 
 }

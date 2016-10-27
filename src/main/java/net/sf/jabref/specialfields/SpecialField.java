@@ -1,21 +1,5 @@
-/*  Copyright (C) 2012-2015 JabRef contributors.
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
 package net.sf.jabref.specialfields;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +8,7 @@ import java.util.Optional;
 import javax.swing.Icon;
 
 import net.sf.jabref.logic.l10n.Localization;
+import net.sf.jabref.model.entry.KeywordList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,17 +21,17 @@ public abstract class SpecialField {
     // public static String TEXT_UNDO;
 
     private List<SpecialFieldValue> values;
-    private List<String> keywords;
+    private KeywordList keywords;
     private HashMap<String, SpecialFieldValue> map;
 
-
+    @Deprecated // create via a new constructor SpecialField(List<SpecialFieldValue> values) instead
     protected void setValues(List<SpecialFieldValue> values) {
         this.values = values;
-        this.keywords = new ArrayList<>();
+        this.keywords = new KeywordList();
         this.map = new HashMap<>();
-        for (SpecialFieldValue v : values) {
-            v.getKeyword().ifPresent(keywords::add);
-            v.getFieldValue().ifPresent(fieldValue -> map.put(fieldValue, v));
+        for (SpecialFieldValue value : values) {
+            value.getKeyword().ifPresent(keywords::add);
+            value.getFieldValue().ifPresent(fieldValue -> map.put(fieldValue, value));
         }
     }
 
@@ -54,7 +39,7 @@ public abstract class SpecialField {
         return this.values;
     }
 
-    public List<String> getKeyWords() {
+    public KeywordList getKeyWords() {
         return this.keywords;
     }
 
