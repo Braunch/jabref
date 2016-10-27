@@ -166,6 +166,8 @@ public class EntryEditor extends JPanel implements EntryContainer {
 
     private final BasePanel panel;
 
+    private FileAnnotationTab fileAnnotationTab;
+
     private boolean updateSource = true; // This can be set to false to stop the source
     private boolean movingToDifferentEntry; // Indicates that we are about to go to the next or previous entry
     private boolean validEntry = true;
@@ -231,7 +233,6 @@ public class EntryEditor extends JPanel implements EntryContainer {
     private void setupFieldPanels() {
         tabbed.removeAll();
         tabs.clear();
-
         EntryType type = EntryTypes.getTypeOrDefault(entry.getType(),
                 this.frame.getCurrentBasePanel().getBibDatabaseContext().getMode());
 
@@ -317,6 +318,7 @@ public class EntryEditor extends JPanel implements EntryContainer {
         addSpecialTabs();
         // source tab
         addSourceTab();
+        addPdfTab();
     }
 
     private void addGeneralTabs() {
@@ -377,7 +379,7 @@ public class EntryEditor extends JPanel implements EntryContainer {
         tabbed.addTab(panelName, IconTheme.JabRefIcon.SOURCE.getSmallIcon(), srcPanel, toolTip);
         tabs.add(srcPanel);
         sourceIndex = tabs.size() - 1; // Set the sourceIndex variable.
-        srcPanel.setFocusCycleRoot(true);
+        srcPanel.setFocusCycleRoot(false);
     }
 
     private void addOtherTab(List<String> otherFields) {
@@ -414,6 +416,22 @@ public class EntryEditor extends JPanel implements EntryContainer {
         tabbed.addTab(Localization.lang("Optional fields"), IconTheme.JabRefIcon.OPTIONAL.getSmallIcon(), optionalPanel
                 .getPane(), Localization.lang("Show optional fields"));
         tabs.add(optionalPanel);
+    }
+
+    /**
+     * Add a tab for displaying comments from a PDF
+     */
+    private void addPdfTab() {
+        tabbed.remove(fileAnnotationTab);
+        tabs.remove(fileAnnotationTab);
+        Optional<String> field = entry.getField(FieldName.FILE);
+        if (field.isPresent()) {
+            fileAnnotationTab = new FileAnnotationTab(this, panel, tabbed);
+            tabbed.addTab(Localization.lang("File annotations"), IconTheme.JabRefIcon.COMMENT.getSmallIcon(), fileAnnotationTab,
+                    Localization.lang("Show file annotations"));
+            tabs.add(fileAnnotationTab);
+        }
+
     }
 
     public String getDisplayedBibEntryType() {
@@ -514,7 +532,6 @@ public class EntryEditor extends JPanel implements EntryContainer {
         // Remove change listener, because the rebuilding causes meaningless
         // events and trouble:
         tabbed.removeChangeListener(tabListener);
-
         setupFieldPanels();
         // Add the change listener again:
         tabbed.addChangeListener(tabListener);
@@ -696,9 +713,10 @@ public class EntryEditor extends JPanel implements EntryContainer {
 
     private void activateVisible() {
         Object activeTab = tabs.get(tabbed.getSelectedIndex());
-
         if (activeTab instanceof EntryEditorTab) {
             ((EntryEditorTab) activeTab).activate();
+        } else if (activeTab instanceof FileAnnotationTab) {
+            ((FileAnnotationTab)activeTab).requestFocus();
         } else {
             source.requestFocus();
         }
@@ -810,6 +828,7 @@ public class EntryEditor extends JPanel implements EntryContainer {
         validateAllFields();
         updateSource();
         panel.newEntryShowing(switchEntry);
+        addPdfTab();
 
     }
 
@@ -967,6 +986,7 @@ public class EntryEditor extends JPanel implements EntryContainer {
             if (tab instanceof EntryEditorTab) {
                 ((EntryEditorTab) tab).validateAllFields();
             }
+            
         }
     }
 
@@ -1077,6 +1097,13 @@ public class EntryEditor extends JPanel implements EntryContainer {
             // or more of the same fields as this one:
             SwingUtilities.invokeLater(() -> {
                 Object activeTab = tabs.get(tabbed.getSelectedIndex());
+                if (activeTab instanceof FileAnnotationTab && !((FileAnnotationTab) activeTab).isInitialized()) {
+                    //Initialize by getting notes from cache if they are cached
+                    FileAnnotationTab.initializeTab((FileAnnotationTab) activeTab,
+                            panel.getAnnotationCache().getFromCache(Optional.of(entry)));
+                    panel.getAnnotationCache().addToCache(entry, ((FileAnnotationTab) activeTab).getAllNotes());
+                }
+
                 if (activeTab instanceof EntryEditorTab) {
                     ((EntryEditorTab) activeTab).updateAll();
                     activateVisible();
@@ -1084,6 +1111,7 @@ public class EntryEditor extends JPanel implements EntryContainer {
             });
         }
     }
+
 
     class DeleteAction extends AbstractAction {
         public DeleteAction() {
